@@ -61,7 +61,6 @@
     <Compile Include="StockPlugin.cs" />
     <Compile Include="Helpers\PluginLog.cs" />
     <Compile Include="Helpers\PluginResources.cs" />
-    <Compile Include="Actions\CounterCommand.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="metadata\LoupedeckPackage.yaml" />
