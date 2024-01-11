@@ -19,7 +19,7 @@
 
         private Double _stockPrice = 0;
         private Double _previousClosePrice = 0;
-        private String _ticker = "UA";
+        private String _ticker = "";
 
         // Initializes the command class.
         public StockTicker() : base(displayName: "Stock Ticker", description: "Displays the current stock price", groupName: "")
@@ -33,13 +33,11 @@
 
             this._plugin.Tick += (sender, e) => this.ActionImageChanged("");
 
-            this.RunCommand(this._ticker);
-
             return base.OnLoad();
         }
 
         // Method to make the API call to fetch stock info
-        protected async Task<Object> getStockPrice()
+        protected async Task<Object> getStockPrice(string ticker)
         {
             using (HttpClient client = new HttpClient())
             {
@@ -58,13 +56,14 @@
         protected override async void RunCommand(String actionParameter)
         {
             this._ticker = actionParameter;
-            dynamic stockResponse = await this.getStockPrice();
+            dynamic stockResponse = await this.getStockPrice(this._ticker);
             this._stockPrice = stockResponse.price;
             this._previousClosePrice = stockResponse.previousClose;
-            this.ActionImageChanged(); // Notify the Loupedeck service that the command display name and/or image has changed.
+            //this.ActionImageChanged(); // Notify the Loupedeck service that the command display name and/or image has changed.
             PluginLog.Info($"{this._ticker} price is {this._stockPrice}");
-            this._plugin.Tick += (sender, e) => this.ActionImageChanged("");
-            this.ActionImageChanged(actionParameter);
+            PluginLog.Info($"actionparameter is {actionParameter}");
+            //this._plugin.Tick += (sender, e) => this.ActionImageChanged("");
+            //this.ActionImageChanged(actionParameter);
         }
 
         protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize)
@@ -72,6 +71,10 @@
             CultureInfo currentCulture = Thread.CurrentThread.CurrentCulture;
 
             Int32 idx = actionParameter.LastIndexOf("/");
+            String _ticker = actionParameter.Substring(idx + 1).Replace("_", " ");
+
+            this.RunCommand(actionParameter);
+
             using (var bitmapBuilder = new BitmapBuilder(imageSize))
             {
                 bitmapBuilder.Clear(BitmapColor.Black);
@@ -93,7 +96,7 @@
                         color = new BitmapColor(0, 255, 0);
                     }
 
-                    bitmapBuilder.DrawText(actionParameter.Substring(idx + 1).Replace("_", " "), (Int32)x1, (Int32)y3, (Int32)w, (Int32)h, color, imageSize == PluginImageSize.Width90 ? 20 : 9, imageSize == PluginImageSize.Width90 ? 2 : 0, 10);
+                    bitmapBuilder.DrawText(_ticker, (Int32)x1, (Int32)y3, (Int32)w, (Int32)h, color, imageSize == PluginImageSize.Width90 ? 20 : 9, imageSize == PluginImageSize.Width90 ? 2 : 0, 10);
                     bitmapBuilder.DrawText(this._stockPrice.ToString(), (Int32)x1, (Int32)y2, (Int32)w, (Int32)h, color, imageSize == PluginImageSize.Width90 ? 25 : 9, imageSize == PluginImageSize.Width90 ? 2 : 0, 10);
                 }
                 return bitmapBuilder.ToImage();
