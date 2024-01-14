@@ -14,11 +14,15 @@
     {
         private StockPlugin _plugin;
         private readonly ConcurrentDictionary<String, dynamic> _tickers;
+        private readonly Timer _updateTimer;
+        private bool _hasLoaded;
 
         public StockTicker() : base(displayName: "Stock Ticker", description: "Displays the current stock price", groupName: "")
         {
             this.MakeProfileAction("text;Enter the ticker you want to use");
             this._tickers = new ConcurrentDictionary<String, dynamic>();
+
+            this._updateTimer = new Timer(this.UpdateStockPrices, null, TimeSpan.Zero, TimeSpan.FromMinutes(3));
         }
 
         protected override Boolean OnLoad()
@@ -28,13 +32,30 @@
             return base.OnLoad();
         }
 
-        public async void OnPluginTick()
+        public void OnPluginTick()
         {
+            if (!this._hasLoaded && (this._tickers.Count() > 0))
+            {
+                this.UpdateStockPrices(null);
+            }
+            base.ActionImageChanged();
+        }
+
+        private async void UpdateStockPrices(object state)
+        {
+            PluginLog.Info($"Called UpdateStockPrices");
+
             foreach (var ticker in this._tickers.Keys.ToArray())
             {
                 await this.getStockPrice(ticker);
             }
-            base.ActionImageChanged();
+
+            if (!this._hasLoaded && (this._tickers.Count() > 0))
+            {
+                this._hasLoaded = true;
+            }
+
+            this.OnPluginTick();
         }
 
         protected async Task<dynamic> getStockPrice(String ticker)
@@ -48,16 +69,14 @@
                     var tickerData = JsonConvert.DeserializeObject<dynamic>(jsonString);
                     this._tickers[ticker] = tickerData;
                     base.ActionImageChanged(ticker);
+
                     return tickerData;
                 }
             }
             return null;
         }
 
-        protected override void RunCommand(String actionParameter)
-        {
-            base.ActionImageChanged(actionParameter);
-        }
+        protected override void RunCommand(String actionParameter) => base.ActionImageChanged(actionParameter);
 
         protected override BitmapImage GetCommandImage(String actionParameter, PluginImageSize imageSize)
         {
